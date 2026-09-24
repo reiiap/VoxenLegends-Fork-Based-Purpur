@@ -1,0 +1,102 @@
+import java.security.MessageDigest
+
+plugins {
+    id 'java'
+}
+
+group = 'id.voxenlegends'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories { mavenCentral() }
+
+def supportedVersions = ['1.21', '1.21.1', '1.21.2', '1.21.3', '1.21.4', '1.21.5']
+def upstreamRoot = layout.projectDirectory.dir('upstream')
+
+tasks.register('verifyJava21') {
+    group = 'verifikasi'
+    description = 'Memastikan build memakai Java 21.'
+    doLast {
+        if (JavaVersion.current().majorVersion != '21') {
+            logger.lifecycle('Java aktif bukan 21; Gradle akan memakai toolchain Java 21 bila tersedia.')
+        }
+    }
+}
+
+tasks.register('buildVersion') {
+    group = 'build'
+    description = 'Membangun JAR Voxen Legends dari sumber Purpur yang dipin untuk satu versi Minecraft.'
+    dependsOn 'verifyJava21', 'jar'
+    doLast {
+        def requested = providers.gradleProperty('mcVersion').orNull
+        if (requested == null || requested.isBlank()) {
+            throw new GradleException('Versi Minecraft wajib diberikan, contoh: ./gradlew buildVersion -PmcVersion=1.21.5')
+        }
+        if (!supportedVersions.contains(requested)) {
+            throw new GradleException("Versi Minecraft '${requested}' tidak didukung. Versi yang didukung: ${supportedVersions.join(', ')}.")
+        }
+        def source = upstreamRoot.dir(requested).asFile
+        if (!new File(source, '.git').isDirectory() || !new File(source, 'gradlew').isFile()) {
+            throw new GradleException("Sumber Purpur ${requested} belum tersedia di ${source}. Jalankan ./scripts/provision-upstream.sh ${requested}, verifikasi revisi yang dipin, lalu ulangi build.")
+        }
+        def command = ['./gradlew', 'createReobfBundlerJar']
+        def result = providers.exec {
+            workingDir source
+            commandLine command
+            ignoreExitValue = true
+        }.result.get()
+        if (result.exitValue != 0) {
+            throw new GradleException("Build Purpur ${requested} gagal (kode ${result.exitValue}). Artefak Voxen tidak dibuat agar tidak menghasilkan kompatibilitas palsu.")
+        }
+        def jars = fileTree(new File(source, 'purpur-server/build/libs')) { include '*mojang*.jar', '*bundler*.jar' }.files.findAll { !it.name.endsWith('-sources.jar') }
+        if (jars.size() != 1) {
+            throw new GradleException("Artefak Purpur ${requested} tidak tunggal atau tidak ditemukan. Menolak menyalin artefak yang tidak dapat diverifikasi.")
+        }
+        def output = layout.buildDirectory.dir("${requested}").get().asFile
+        def staging = layout.buildDirectory.dir("staging/${requested}").get().asFile
+        delete(staging)
+        staging.mkdirs()
+        copy {
+            from zipTree(jars.singleFile)
+            from zipTree(tasks.named('jar').get().archiveFile.get().asFile)
+            into staging
+            exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA'
+        }
+        output.mkdirs()
+        def artifact = new File(output, "voxen-legends-${requested}.jar")
+        delete(artifact)
+        ant.jar(destfile: artifact, basedir: staging, manifest: [
+            'Implementation-Title': 'Voxen Legends',
+            'Voxen-Minecraft-Version': requested
+        ])
+        logger.lifecycle("Artefak Voxen Legends ${requested} dibuat dari sumber Purpur dan kelas ENGINE Voxen: ${artifact}")
+    }
+}
+
+tasks.register('buildAll') {
+    group = 'build'
+    description = 'Membangun setiap versi Purpur yang didukung dari sumbernya masing-masing.'
+    doLast {
+        supportedVersions.each { version ->
+            def result = providers.exec {
+                commandLine './gradlew', '--no-daemon', 'buildVersion', "-PmcVersion=${version}"
+                ignoreExitValue = true
+            }.result.get()
+            if (result.exitValue != 0) throw new GradleException("Build seluruh versi dihentikan pada Minecraft ${version}. Lihat pesan validasi sebelumnya.")
+        }
+    }
+}
+
+tasks.register('foundationTest', JavaExec) {
+    group = 'verification'
+    description = 'Menjalankan pengujian fondasi Voxen tanpa ketergantungan eksternal.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'id.voxenlegends.FoundationTestSuite'
+}
+
+tasks.named('check') { dependsOn 'foundationTest' }
