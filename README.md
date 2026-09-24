@@ -2,7 +2,7 @@
 
 Fork Purpur bertema **Dark Fantasy, RPG, Roleplay, dan Legends**. Pemain membentuk sejarah dunia, sementara server mempertahankan state sebagai sumber kebenaran.
 
-> Status saat ini: **Phase 1 — Foundation**. Repository ini memulai fondasi yang aman dan arsitektur build, bukan mengklaim seluruh fitur gameplay sudah selesai.
+> Status saat ini: **belum siap operasi**. Fondasi dan transaksi domain telah diuji, tetapi checkout/patch lifecycle Purpur, persistence SQL, dan adapter packet belum tersedia di repository awal ini.
 
 ## Versi dan build
 
