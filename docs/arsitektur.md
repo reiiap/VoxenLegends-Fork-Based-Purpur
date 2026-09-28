@@ -1,7 +1,5 @@
-# Arsitektur
+# Arsitektur Bootstrap Purpur 1.21
 
-- **ENGINE**: bootstrap, konfigurasi tervalidasi, logging audit, validasi paket, persistence dan adapter Purpur per-versi.
-- **GAMEPLAY**: profile, faction, reputasi, quest, legend, ekonomi, crime, bounty, territory, dan world state.
-- **CONTENT**: definisi lore, NPC, dialog, quest, faction, event, dungeon, dan boss data-driven.
+Build memakai checkout resmi `PurpurMC/Purpur` pada `upstream/1.21`, lalu menerapkan patch source dari `patches/common/` dan `patches/versions/1.21/`. Patch tersebut adalah satu-satunya tempat yang sah untuk menghubungkan `VoxenCore` ke lifecycle server Purpur.
 
-Kode umum tidak bergantung pada NMS. Perbedaan Purpur/NMS ditempatkan pada adapter per-versi di checkout upstream, dengan kontrak API Voxen sebagai batasnya.
+Kode `src/main/java/id/voxenlegends` adalah fondasi common dan belum merupakan integrasi runtime dengan Minecraft. Build tidak menerima artifact sebelum patch native menghasilkan kelas `VoxenCore` dan kelas server Minecraft dalam JAR yang sama.

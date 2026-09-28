@@ -1,7 +1,13 @@
-# Build
+# Build Purpur 1.21
 
-Gunakan **JDK 21** dan Gradle 8.14.4. `provision-upstream.sh` mengambil source Purpur untuk versi yang diminta ke direktori `upstream/<versi>`. Periksa commit checkout tersebut sebelum release.
+Bootstrap ini secara sengaja hanya membangun **Minecraft 1.21** menggunakan **JDK 21**. Input build yang diperlukan adalah checkout resmi Purpur branch `ver/1.21`, patch source Voxen 1.21 yang direview, serta dependency Gradle Purpur.
 
-`buildVersion` memanggil task `createReobfBundlerJar` pada checkout Purpur target lalu menggabungkan kelas ENGINE Voxen ke artefak tersebut setelah menghapus signature yang tidak lagi valid ke `build/<versi>/voxen-legends-<versi>.jar`. Tidak ada task yang mengganti nama JAR lintas versi.
+```bash
+./scripts/provision-upstream.sh 1.21
+# Tambahkan patch native yang sesuai ke patches/common atau patches/versions/1.21.
+./gradlew clean buildVersion -PmcVersion=1.21
+```
 
-`buildAll` menghentikan proses pada versi pertama yang gagal, sehingga release parsial tidak tersamar sebagai release lengkap.
+Build fail-closed bila source, remote Purpur, patch, atau artifact tidak tervalidasi. Patch preparation idempoten: seluruh patch harus belum diterapkan atau seluruhnya sudah diterapkan; state campuran ditolak.
+
+Artifact final hanya disalin setelah build upstream menghasilkan JAR Voxen yang berisi kelas `MinecraftServer` dan `VoxenCore`. `build/1.21/provenance.json` mencatat commit Purpur, commit Voxen, Java target, dan SHA-256 artifact yang benar-benar dibangun.

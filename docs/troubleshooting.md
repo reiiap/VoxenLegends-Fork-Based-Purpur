@@ -1,9 +1,13 @@
 # Pemecahan Masalah
 
-## Build versi berhenti karena sumber Purpur tidak tersedia
+## `BUILD STOPPED: source Purpur 1.21 tidak tersedia`
 
-Ini adalah proteksi yang disengaja. Sediakan checkout Purpur untuk versi yang diminta menggunakan `./scripts/provision-upstream.sh <versi>`, periksa revisi upstream, lalu jalankan build kembali. Sistem build tidak membuat artefak pengganti dan tidak menggunakan JAR dari versi lain.
+Jalankan `./scripts/provision-upstream.sh 1.21`. Jika GitHub tidak dapat diakses, periksa proxy/network atau sediakan checkout Purpur resmi yang dapat diverifikasi pada `upstream/1.21`. Jangan menaruh JAR hasil unduhan sebagai pengganti source.
 
-## Java 21 tidak ditemukan oleh Gradle
+## Patch tidak cocok atau state campuran
 
-Pasang JDK 21 dan arahkan Gradle dengan properti `org.gradle.java.installations.paths`. Jangan membangun release dengan toolchain yang berbeda tanpa memverifikasi kompatibilitasnya.
+Gunakan checkout Purpur bersih pada commit yang sesuai patch. Script preparation menolak state ketika hanya sebagian patch sudah diterapkan; ini mencegah compile dari source setengah-patch.
+
+## Java 21 tidak ditemukan
+
+Pasang JDK 21 dan arahkan Gradle ke instalasi itu. Build server tidak boleh diam-diam menggunakan Java versi lain.
